@@ -1,0 +1,22 @@
+{
+  "name": "webrtc-study",
+  "version": "1.0.0",
+  "description": "一个从基础到进阶的 WebRTC 学习项目",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8000 -c-1",
+    "dev": "npx http-server -p 8000 -c-1 -o"
+  },
+  "keywords": [
+    "webrtc",
+    "learning",
+    "tutorial",
+    "web-rtc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
+

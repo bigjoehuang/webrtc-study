@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例 1：获取用户媒体 - WebRTC 学习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📹 示例 1：获取用户媒体</h1>
+            <p class="subtitle">学习 getUserMedia() API 的基础用法</p>
+            <a href="../../index.html" class="back-link">← 返回导航</a>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>学习目标</h3>
+                <ul>
+                    <li>理解 <code>getUserMedia()</code> API 的作用</li>
+                    <li>获取摄像头和麦克风的访问权限</li>
+                    <li>将媒体流显示在 video 元素中</li>
+                    <li>处理权限请求和错误情况</li>
+                </ul>
+            </div>
+
+            <div class="video-container">
+                <video id="localVideo" autoplay playsinline></video>
+                <div class="video-placeholder" id="placeholder">
+                    <p>点击下方按钮开始获取媒体流</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary">开始获取媒体</button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>停止媒体</button>
+                <button id="switchCameraBtn" class="btn btn-secondary" disabled>切换摄像头</button>
+            </div>
+
+            <div class="info-section">
+                <h3>媒体信息</h3>
+                <div id="mediaInfo" class="media-info">
+                    <p>等待获取媒体流...</p>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <h3>核心代码</h3>
+                <pre><code>// 获取用户媒体流
+const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,  // 请求视频
+    audio: true   // 请求音频
+});
+
+// 将流赋值给 video 元素
+videoElement.srcObject = stream;</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
+

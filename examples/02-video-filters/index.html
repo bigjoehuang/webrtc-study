@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例 2：视频滤镜和效果 - WebRTC 学习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 示例 2：视频滤镜和效果</h1>
+            <p class="subtitle">使用 Canvas 对视频流应用实时滤镜</p>
+            <a href="../../index.html" class="back-link">← 返回导航</a>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>学习目标</h3>
+                <ul>
+                    <li>理解如何使用 Canvas 处理视频流</li>
+                    <li>学习 CSS 滤镜和 Canvas 图像处理</li>
+                    <li>实现实时视频滤镜效果</li>
+                    <li>掌握 requestAnimationFrame 的使用</li>
+                </ul>
+            </div>
+
+            <div class="video-section">
+                <div class="video-wrapper">
+                    <h3>原始视频</h3>
+                    <video id="originalVideo" autoplay playsinline></video>
+                </div>
+                <div class="video-wrapper">
+                    <h3>处理后视频</h3>
+                    <canvas id="filteredCanvas"></canvas>
+                    <div class="video-placeholder" id="placeholder">
+                        <p>点击开始获取媒体流</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary">开始获取媒体</button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>停止媒体</button>
+            </div>
+
+            <div class="filters-section">
+                <h3>选择滤镜效果</h3>
+                <div class="filters-grid">
+                    <button class="filter-btn" data-filter="none">无滤镜</button>
+                    <button class="filter-btn" data-filter="grayscale">灰度</button>
+                    <button class="filter-btn" data-filter="sepia">怀旧</button>
+                    <button class="filter-btn" data-filter="blur">模糊</button>
+                    <button class="filter-btn" data-filter="brightness">亮度</button>
+                    <button class="filter-btn" data-filter="contrast">对比度</button>
+                    <button class="filter-btn" data-filter="invert">反转</button>
+                    <button class="filter-btn" data-filter="saturate">饱和度</button>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <h3>核心代码</h3>
+                <pre><code>// 使用 Canvas 处理视频帧
+function drawFrame() {
+    const canvas = document.getElementById('filteredCanvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.getElementById('originalVideo');
+    
+    // 将视频帧绘制到 Canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // 应用滤镜
+    ctx.filter = 'grayscale(100%)';
+    
+    // 继续下一帧
+    requestAnimationFrame(drawFrame);
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
+
