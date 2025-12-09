@@ -4,8 +4,8 @@
   "description": "一个从基础到进阶的 WebRTC 学习项目",
   "main": "index.html",
   "scripts": {
-    "start": "npx http-server -p 8000 -c-1",
-    "dev": "npx concurrently \"npx http-server -p 8000 -c-1 -o\" \"node scripts/start-signaling.js\"",
+    "start": "npx live-server --port=8000 --open=/index.html --watch=/",
+    "dev": "npx concurrently \"npx live-server --port=8000 --open=/index.html --watch=/\" \"node scripts/start-signaling.js\"",
     "signaling": "node scripts/start-signaling.js"
   },
   "keywords": [
@@ -18,7 +18,8 @@
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
   },
   "dependencies": {
     "ws": "^8.16.0"

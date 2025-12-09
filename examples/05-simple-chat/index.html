@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例 5：简单视频通话 - WebRTC 学习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📞 示例 5：简单视频通话</h1>
+            <p class="subtitle">完整的视频通话应用，使用 WebSocket 信令服务器</p>
+            <a href="../../index.html" class="back-link">← 返回导航</a>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>学习目标</h3>
+                <ul>
+                    <li>完整的视频通话流程实现</li>
+                    <li>使用 WebSocket 进行信令交换</li>
+                    <li>ICE 候选、SDP 交换、媒体协商</li>
+                    <li>连接状态管理和错误处理</li>
+                </ul>
+            </div>
+
+            <div class="connection-panel">
+                <div class="connection-status">
+                    <h3>连接状态</h3>
+                    <div id="connectionStatus" class="status-display">
+                        <p>等待连接...</p>
+                    </div>
+                    <div id="wsStatus" class="ws-status">
+                        <span id="wsStatusText">WebSocket: 未连接</span>
+                    </div>
+                </div>
+
+                <div class="connection-controls">
+                    <button id="connectBtn" class="btn btn-primary">连接服务器</button>
+                    <button id="disconnectBtn" class="btn btn-secondary" disabled>断开连接</button>
+                </div>
+            </div>
+
+            <div class="video-section">
+                <div class="video-wrapper">
+                    <h3>本地视频</h3>
+                    <video id="localVideo" autoplay playsinline muted></video>
+                    <div class="video-placeholder" id="localPlaceholder">
+                        <p>等待获取媒体流...</p>
+                    </div>
+                    <div class="video-controls">
+                        <button id="toggleVideoBtn" class="btn-control" title="切换视频">
+                            📹 视频
+                        </button>
+                        <button id="toggleAudioBtn" class="btn-control" title="切换音频">
+                            🎤 音频
+                        </button>
+                    </div>
+                </div>
+                <div class="video-wrapper">
+                    <h3>远程视频</h3>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                    <div class="video-placeholder" id="remotePlaceholder">
+                        <p>等待对方连接...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="call-controls">
+                <button id="startCallBtn" class="btn btn-primary" disabled>开始通话</button>
+                <button id="endCallBtn" class="btn btn-danger" disabled>结束通话</button>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-panel">
+                    <h3>通话信息</h3>
+                    <div id="callInfo" class="info-display">
+                        <p>等待开始通话...</p>
+                    </div>
+                </div>
+
+                <div class="info-panel">
+                    <h3>信令日志</h3>
+                    <div id="signalingLog" class="log-display">
+                        <p>等待信令消息...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
+
