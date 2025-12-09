@@ -63,6 +63,7 @@ class WebSocketSignaling {
             };
             
             this.ws.onmessage = (event) => {
+                console.log('WebSocket 收到消息:', event.data);
                 try {
                     const data = JSON.parse(event.data);
                     this.handleMessage(data);

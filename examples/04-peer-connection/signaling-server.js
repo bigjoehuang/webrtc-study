@@ -80,6 +80,8 @@ wss.on('connection', (ws, req) => {
  * 处理客户端消息
  */
 function handleMessage(clientId, data) {
+    console.log(`handleMessage,clientId= [${clientId}], 收到消息:`, data);
+
     const client = clients.get(clientId);
     if (!client) {
         console.error(`客户端 ${clientId} 不存在`);
@@ -120,6 +122,8 @@ function handleMessage(clientId, data) {
  * 处理客户端加入房间
  */
 function handleJoin(clientId, payload) {
+    console.log(`handleJoin [${clientId}] 加入房间 ${payload.roomId}，角色: ${payload.role}`);
+
     const client = clients.get(clientId);
     let { role } = payload; // 'offerer' 或 'answerer'，使用let以便可以修改
     
@@ -192,6 +196,8 @@ function handleJoin(clientId, payload) {
  * 处理 Offer
  */
 function handleOffer(clientId, payload) {
+    console.log('handleOffer, clientId:' + clientId);
+
     const client = clients.get(clientId);
     if (!client || !client.roomId) {
         sendError(client.ws, '未加入房间');
@@ -223,6 +229,7 @@ function handleOffer(clientId, payload) {
  * 处理 Answer
  */
 function handleAnswer(clientId, payload) {
+    console.log('handleAnswer, clientId:' + clientId);
     const client = clients.get(clientId);
     if (!client || !client.roomId) {
         sendError(client.ws, '未加入房间');
