@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例 4：建立 P2P 连接 - WebRTC 学习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔗 示例 4：建立 P2P 连接</h1>
+            <p class="subtitle">学习 RTCPeerConnection 的基础用法</p>
+            <a href="../../index.html" class="back-link">← 返回导航</a>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>学习目标</h3>
+                <ul>
+                    <li>理解 <code>RTCPeerConnection</code> 的作用</li>
+                    <li>学习 SDP（Session Description Protocol）交换</li>
+                    <li>理解 ICE（Interactive Connectivity Establishment）候选</li>
+                    <li>使用简单的信令机制建立 P2P 连接</li>
+                </ul>
+            </div>
+
+
+
+            <div class="signaling-selection">
+                <h3>选择信令方式</h3>
+                <p class="signaling-hint">选择用于交换信令的方式（WebSocket 需要先启动服务器）</p>
+                <div class="signaling-buttons">
+                    <button id="localStorageBtn" class="btn-signaling active" data-signaling="localStorage">
+                        📦 localStorage
+                        <span class="btn-desc">（简单，无需服务器）</span>
+                    </button>
+                    <button id="websocketBtn" class="btn-signaling" data-signaling="websocket">
+                        🔌 WebSocket
+                        <span class="btn-desc">（实时，需要服务器）</span>
+                    </button>
+                </div>
+                <div id="signalingStatus" class="signaling-status"></div>
+            </div>
+
+            <div class="role-selection">
+                <h3>选择角色</h3>
+                <p class="role-hint">📌 使用说明：打开两个标签页，一个选择"发起者"，另一个选择"接收者"</p>
+                <div class="role-buttons">
+                    <button id="offererBtn" class="btn btn-primary">我是发起者</button>
+                    <button id="answererBtn" class="btn btn-secondary">我是接收者</button>
+                    <button id="resetRoleBtn" class="btn btn-reset" style="display: none;">重置角色</button>
+                </div>
+                <div id="roleInfo" class="role-info"></div>
+            </div>
+
+            <div class="video-section">
+                <div class="video-wrapper">
+                    <h3>本地视频</h3>
+                    <video id="localVideo" autoplay playsinline muted></video>
+                    <div class="video-placeholder" id="localPlaceholder">
+                        <p>等待获取媒体流...</p>
+                    </div>
+                </div>
+                <div class="video-wrapper">
+                    <h3>远程视频</h3>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                    <div class="video-placeholder" id="remotePlaceholder">
+                        <p>等待连接建立...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary" disabled>开始连接</button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>停止连接</button>
+            </div>
+
+            <div class="info-grid">
+                <div class="connection-info">
+                    <h3>连接状态</h3>
+                    <div id="connectionStatus" class="status-display">
+                        <p>等待选择角色...</p>
+                    </div>
+                </div>
+
+                <div class="signaling-info">
+                    <h3>信令信息</h3>
+                    <div id="signalingInfo" class="signaling-display">
+                        <p>信令通过 localStorage 在两个标签页之间传递</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ice-info">
+                <div class="ice-header">
+                    <h3>ICE 候选信息</h3>
+                    <button id="copyIceBtn" class="btn-copy" title="复制 ICE 信息到剪贴板">
+                        📋 复制
+                    </button>
+                </div>
+                <div id="iceInfo" class="ice-display">
+                    <p>等待 ICE 候选...</p>
+                </div>
+            </div>
+
+            <div class="code-section">
+                <h3>核心代码 - 媒体流传输</h3>
+                <pre><code>// 1. 创建 RTCPeerConnection（P2P 连接对象）
+const pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+});
+
+// 2. 【传输流的关键步骤】添加本地媒体流
+// addTrack 会将媒体轨道添加到连接中，WebRTC 会自动传输
+localStream.getTracks().forEach(track => {
+    pc.addTrack(track, localStream);  // ← 这里开始传输流
+});
+
+// 3. 创建 Offer/Answer（协商媒体格式）
+const offer = await pc.createOffer();
+await pc.setLocalDescription(offer);
+
+// 4. 【接收远程流】监听对方发送的媒体流
+pc.ontrack = (event) => {
+    // 当对方 addTrack 后，流会自动传输过来
+    remoteVideo.srcObject = event.streams[0];  // ← 这里接收流
+};
+
+// 5. 处理 ICE 候选（建立网络连接）
+pc.onicecandidate = (event) => {
+    if (event.candidate) {
+        // 通过信令服务器发送候选
+    }
+};</code></pre>
+                <p class="code-note">
+                    <strong>💡 关键点：</strong><br>
+                    • <code>addTrack()</code> - 添加本地流，开始传输<br>
+                    • <code>ontrack</code> - 接收远程流，流已传输完成<br>
+                    • WebRTC 自动处理编码、打包、网络传输，无需手动操作
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
+
