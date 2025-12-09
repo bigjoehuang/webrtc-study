@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>示例 3：屏幕共享 - WebRTC 学习</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖥️ 示例 3：屏幕共享</h1>
+            <p class="subtitle">学习 getDisplayMedia() API 实现屏幕共享</p>
+            <a href="../../index.html" class="back-link">← 返回导航</a>
+        </header>
+
+        <div class="content">
+            <div class="info-box">
+                <h3>学习目标</h3>
+                <ul>
+                    <li>理解 <code>getDisplayMedia()</code> API 的作用</li>
+                    <li>实现屏幕、窗口或标签页的共享</li>
+                    <li>在摄像头和屏幕共享之间切换</li>
+                    <li>处理屏幕共享的权限和错误</li>
+                </ul>
+            </div>
+
+            <div class="video-container">
+                <video id="localVideo" autoplay playsinline></video>
+                <div class="video-placeholder" id="placeholder">
+                    <p>点击下方按钮开始共享</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="shareScreenBtn" class="btn btn-primary">共享屏幕</button>
+                <button id="shareCameraBtn" class="btn btn-secondary">切换到摄像头</button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>停止共享</button>
+            </div>
+
+            <div class="info-section">
+                <h3>共享信息</h3>
+                <div id="shareInfo" class="share-info">
+                    <p>等待开始共享...</p>
+                </div>
+            </div>
+
+            <div class="tips-section">
+                <h3>💡 使用提示</h3>
+                <ul>
+                    <li><strong>共享屏幕：</strong>可以共享整个屏幕、特定窗口或浏览器标签页</li>
+                    <li><strong>共享音频：</strong>某些浏览器支持同时共享系统音频</li>
+                    <li><strong>切换源：</strong>可以在屏幕共享和摄像头之间自由切换</li>
+                    <li><strong>停止共享：</strong>点击停止按钮或关闭浏览器共享对话框</li>
+                </ul>
+            </div>
+
+            <div class="code-section">
+                <h3>核心代码</h3>
+                <pre><code>// 获取屏幕共享流
+const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,  // 请求视频（屏幕）
+    audio: true   // 请求音频（系统音频，可选）
+});
+
+// 将流赋值给 video 元素
+videoElement.srcObject = stream;
+
+// 监听共享停止事件
+stream.getVideoTracks()[0].addEventListener('ended', () => {
+    console.log('用户停止了屏幕共享');
+});</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
+
