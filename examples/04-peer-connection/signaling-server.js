@@ -121,20 +121,33 @@ function handleMessage(clientId, data) {
  */
 function handleJoin(clientId, payload) {
     const client = clients.get(clientId);
-    const { role } = payload; // 'offerer' 或 'answerer'
+    let { role } = payload; // 'offerer' 或 'answerer'，使用let以便可以修改
     
     if (!role || (role !== 'offerer' && role !== 'answerer')) {
         sendError(client.ws, '无效的角色，必须是 offerer 或 answerer');
         return;
     }
     
-    client.role = role;
-    
     // 查找或创建房间
     let roomId = null;
+    let existingClientRole = null;
+    
     for (const [rid, roomClients] of rooms.entries()) {
         if (roomClients.length === 1) {
-            // 找到只有一个客户端的房间，加入它
+            // 找到只有一个客户端的房间
+            const existingClientId = roomClients[0];
+            const existingClient = clients.get(existingClientId);
+            
+            if (existingClient && existingClient.role) {
+                existingClientRole = existingClient.role;
+                
+                // 如果角色相同，自动调整为另一个角色
+                if (role === existingClientRole) {
+                    role = role === 'offerer' ? 'answerer' : 'offerer';
+                    console.log(`[${clientId}] 角色冲突，自动调整为: ${role}`);
+                }
+            }
+            
             roomId = rid;
             roomClients.push(clientId);
             break;
@@ -147,11 +160,12 @@ function handleJoin(clientId, payload) {
         rooms.set(roomId, [clientId]);
     }
     
+    client.role = role;
     client.roomId = roomId;
     
     console.log(`[${clientId}] 加入房间 ${roomId}，角色: ${role}`);
     
-    // 通知客户端已加入房间
+    // 通知客户端已加入房间（发送实际使用的角色）
     client.ws.send(JSON.stringify({
         type: 'joined',
         roomId: roomId,

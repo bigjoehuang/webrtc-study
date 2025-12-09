@@ -58,6 +58,8 @@ class SignalingClient {
             };
             
             this.ws.onmessage = (event) => {
+                console.log('收到消息:', event.data);
+
                 try {
                     const data = JSON.parse(event.data);
                     this.handleMessage(data);
@@ -101,12 +103,13 @@ class SignalingClient {
             case 'joined':
                 roomId = data.roomId;
                 addLog(`已加入房间: ${roomId}，角色: ${data.role}`, 'success');
-                updateCallInfo(`房间: ${roomId}`);
+                updateCallInfo(`房间: ${roomId}，等待另一个客户端...`);
                 break;
                 
             case 'ready':
                 addLog('房间已就绪，可以开始通话', 'success');
                 startCallBtn.disabled = false;
+                updateCallInfo(`房间: ${roomId}，可以开始通话`);
                 break;
                 
             case 'offer':
@@ -206,6 +209,8 @@ function connectToServer() {
         connectBtn.disabled = true;
         disconnectBtn.disabled = false;
         isConnected = true;
+        // 连接成功后，等待 WebSocket 连接建立后再启用按钮
+        // 按钮会在收到 'joined' 或 'ready' 消息时启用
     }
 }
 

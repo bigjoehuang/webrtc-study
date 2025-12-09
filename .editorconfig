@@ -1,0 +1,25 @@
+# EditorConfig 配置文件
+# 用于统一代码风格，防止不必要的格式修改
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{js,html,css}]
+indent_size = 4
+
+[*.md]
+trim_trailing_whitespace = false
+
+# 规则说明：
+# 1. 文件末尾只保留一个换行符（insert_final_newline = true）
+# 2. 自动删除行尾空白（trim_trailing_whitespace = true）
+# 3. 禁止在文件末尾添加多余空行
+# 4. 所有修改必须包含实际内容变更，不允许仅添加空行
+

@@ -28,18 +28,8 @@
 
 
             <div class="signaling-selection">
-                <h3>选择信令方式</h3>
-                <p class="signaling-hint">选择用于交换信令的方式（WebSocket 需要先启动服务器）</p>
-                <div class="signaling-buttons">
-                    <button id="localStorageBtn" class="btn-signaling active" data-signaling="localStorage">
-                        📦 localStorage
-                        <span class="btn-desc">（简单，无需服务器）</span>
-                    </button>
-                    <button id="websocketBtn" class="btn-signaling" data-signaling="websocket">
-                        🔌 WebSocket
-                        <span class="btn-desc">（实时，需要服务器）</span>
-                    </button>
-                </div>
+                <h3>信令服务器状态</h3>
+                <p class="signaling-hint">使用 WebSocket 信令服务器进行连接（需要先启动服务器）</p>
                 <div id="signalingStatus" class="signaling-status"></div>
             </div>
 
@@ -87,7 +77,7 @@
                 <div class="signaling-info">
                     <h3>信令信息</h3>
                     <div id="signalingInfo" class="signaling-display">
-                        <p>信令通过 localStorage 在两个标签页之间传递</p>
+                        <p>等待连接 WebSocket 服务器...</p>
                     </div>
                 </div>
             </div>

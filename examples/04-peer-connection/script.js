@@ -2,9 +2,7 @@
  * 示例 4：建立 P2P 连接
  * 
  * 这个示例演示了如何使用 RTCPeerConnection 建立点对点连接
- * 支持两种信令方式：
- * 1. localStorage（简单，无需服务器）
- * 2. WebSocket（实时，需要服务器）
+ * 使用 WebSocket 信令服务器进行信令交换
  */
 
 // 获取 DOM 元素
@@ -22,29 +20,14 @@ const connectionStatus = document.getElementById('connectionStatus');
 const signalingInfo = document.getElementById('signalingInfo');
 const iceInfo = document.getElementById('iceInfo');
 const copyIceBtn = document.getElementById('copyIceBtn');
-const securityWarning = document.getElementById('securityWarning');
-const currentUrl = document.getElementById('currentUrl');
-const securityStatus = document.getElementById('securityStatus');
-const localStorageBtn = document.getElementById('localStorageBtn');
-const websocketBtn = document.getElementById('websocketBtn');
 const signalingStatus = document.getElementById('signalingStatus');
 
 // 存储状态
 let localStream = null;
 let peerConnection = null;
 let currentRole = null; // 'offerer' 或 'answerer'
-let signalingInterval = null;
 let iceCandidateCount = 0;
-let currentSignalingType = 'localStorage'; // 'localStorage' 或 'websocket'
 let websocketSignaling = null; // WebSocket 信令实例
-
-// localStorage 键名
-const SIGNALING_KEYS = {
-    OFFER: 'webrtc_offer',
-    ANSWER: 'webrtc_answer',
-    ICE_CANDIDATE_OFFERER: 'webrtc_ice_offerer',
-    ICE_CANDIDATE_ANSWERER: 'webrtc_ice_answerer'
-};
 
 // WebSocket 服务器地址（可以根据实际情况修改）
 const WS_SERVER_URL = 'ws://localhost:8080';
@@ -121,8 +104,23 @@ class WebSocketSignaling {
                 
             case 'joined':
                 this.roomId = data.roomId;
-                this.role = data.role;
+                const serverRole = data.role;
+                const originalRole = this.role; // 保存用户选择的原始角色
+                
+                // 更新实例的角色
+                this.role = serverRole;
                 console.log('已加入房间:', this.roomId, '角色:', this.role);
+                
+                // 如果服务器返回的角色与用户选择的不同，通知外部更新页面
+                // 注意：即使originalRole为空，也要通知，因为可能是服务器自动分配的角色
+                if (originalRole !== serverRole) {
+                    console.log(`角色被服务器调整: ${originalRole || '未设置'} -> ${serverRole}`);
+                    // 通过onMessage回调通知外部更新角色
+                    if (this.onMessage) {
+                        this.onMessage('role-changed', serverRole);
+                    }
+                }
+                
                 this.onStatusChange('connected', `房间: ${this.roomId}, 角色: ${this.role}`);
                 break;
                 
@@ -250,22 +248,14 @@ class WebSocketSignaling {
  * 初始化页面
  */
 function initPage() {
-    // 显示当前访问地址
-    currentUrl.textContent = window.location.href;
-    
-    // 检查是否是安全环境
+    // 检查是否是安全环境（用于日志输出）
     const isSecureContext = window.isSecureContext || 
                            location.protocol === 'https:' || 
                            location.hostname === 'localhost' || 
                            location.hostname === '127.0.0.1';
     
-    if (isSecureContext) {
-        securityStatus.textContent = '✅ 安全环境（HTTPS 或 localhost）';
-        securityStatus.className = 'security-status secure';
-    } else {
-        securityStatus.textContent = '⚠️ 非安全环境（可能需要 HTTPS）';
-        securityStatus.className = 'security-status insecure';
-        securityWarning.classList.add('unsafe');
+    if (!isSecureContext) {
+        console.warn('⚠️ 非安全环境（可能需要 HTTPS）');
     }
 }
 
@@ -428,37 +418,6 @@ async function getLocalStream() {
 }
 
 /**
- * 选择信令方式
- */
-function selectSignalingType(type) {
-    if (peerConnection || localStream) {
-        if (!confirm('当前有活动连接，切换信令方式将断开连接，确定继续吗？')) {
-            return;
-        }
-        stopConnection();
-    }
-    
-    currentSignalingType = type;
-    
-    // 更新按钮状态
-    localStorageBtn.classList.toggle('active', type === 'localStorage');
-    websocketBtn.classList.toggle('active', type === 'websocket');
-    
-    // 关闭之前的 WebSocket 连接
-    if (websocketSignaling) {
-        websocketSignaling.close();
-        websocketSignaling = null;
-    }
-    
-    // 如果是 WebSocket，尝试连接
-    if (type === 'websocket') {
-        connectWebSocket();
-    } else {
-        updateSignalingStatus('info', '使用 localStorage 信令（无需服务器）');
-    }
-}
-
-/**
  * 连接 WebSocket 服务器
  */
 function connectWebSocket() {
@@ -482,6 +441,46 @@ function connectWebSocket() {
  */
 function handleWebSocketMessage(type, payload) {
     switch (type) {
+        case 'role-changed':
+            // 服务器调整了角色，更新页面显示
+            const newRole = payload;
+            console.log(`收到角色变更通知: ${currentRole} -> ${newRole}`);
+            
+            // 强制更新角色，即使currentRole已经设置
+            if (newRole && (newRole === 'offerer' || newRole === 'answerer')) {
+                const wasChanged = currentRole && currentRole !== newRole;
+                currentRole = newRole;
+                
+                // 更新UI显示
+                if (newRole === 'offerer') {
+                    roleInfo.textContent = wasChanged 
+                        ? '✅ 您是发起者（Offerer）- 将创建 Offer（角色已自动调整）'
+                        : '✅ 您是发起者（Offerer）- 将创建 Offer';
+                    roleInfo.className = 'role-info offerer';
+                } else {
+                    roleInfo.textContent = wasChanged
+                        ? '✅ 您是接收者（Answerer）- 将创建 Answer（角色已自动调整）'
+                        : '✅ 您是接收者（Answerer）- 将创建 Answer';
+                    roleInfo.className = 'role-info answerer';
+                }
+                
+                // 如果角色还没有选择，启用按钮
+                if (!offererBtn.disabled && !answererBtn.disabled) {
+                    offererBtn.disabled = true;
+                    answererBtn.disabled = true;
+                    resetRoleBtn.style.display = 'inline-block';
+                    startBtn.disabled = false;
+                }
+                
+                updateConnectionStatus('new');
+                if (wasChanged) {
+                    updateSignalingInfo('角色已自动调整为' + (newRole === 'offerer' ? '发起者' : '接收者') + '，点击"开始连接"按钮');
+                } else {
+                    updateSignalingInfo('角色已选择，点击"开始连接"按钮');
+                }
+            }
+            break;
+            
         case 'offer':
             if (currentRole === 'answerer') {
                 handleOffer(payload);
@@ -553,8 +552,8 @@ function selectRole(role) {
         roleInfo.className = 'role-info answerer';
     }
     
-    // 如果是 WebSocket 信令，加入房间
-    if (currentSignalingType === 'websocket' && websocketSignaling) {
+    // 加入房间
+    if (websocketSignaling) {
         websocketSignaling.join(role);
     }
     
@@ -651,19 +650,15 @@ async function createOffer() {
         
         console.log('Offer 创建成功:', offer);
         
-        // 通过信令发送 Offer
-        if (currentSignalingType === 'websocket' && websocketSignaling) {
+        // 通过 WebSocket 发送 Offer
+        if (websocketSignaling) {
             if (websocketSignaling.sendOffer(offer)) {
-                updateSignalingInfo('✅ Offer 已发送（WebSocket），等待 Answer...');
+                updateSignalingInfo('✅ Offer 已发送，等待 Answer...');
             } else {
                 updateSignalingInfo('❌ 发送 Offer 失败，WebSocket 未连接');
             }
         } else {
-            // localStorage 方式
-            localStorage.setItem(SIGNALING_KEYS.OFFER, JSON.stringify(offer));
-            localStorage.setItem('webrtc_offer_timestamp', Date.now().toString());
-            updateSignalingInfo('✅ Offer 已发送（localStorage），等待 Answer...');
-            localStorage.removeItem(SIGNALING_KEYS.ANSWER);
+            updateSignalingInfo('❌ WebSocket 未连接，请先连接服务器');
         }
     } catch (error) {
         console.error('创建 Offer 失败:', error);
@@ -676,48 +671,7 @@ async function createOffer() {
  */
 async function waitForOffer() {
     updateSignalingInfo('等待 Offer...');
-    
-    // WebSocket 方式不需要轮询，直接等待消息
-    if (currentSignalingType === 'websocket') {
-        // WebSocket 消息会在 handleWebSocketMessage 中处理
-        return;
-    }
-    
-    // localStorage 方式需要轮询检查
-    const checkOffer = () => {
-        const offerData = localStorage.getItem(SIGNALING_KEYS.OFFER);
-        const timestamp = localStorage.getItem('webrtc_offer_timestamp');
-        
-        if (offerData && timestamp) {
-            const offerTime = parseInt(timestamp);
-            const now = Date.now();
-            
-            // 只处理最近 30 秒内的 Offer（避免处理旧的）
-            if (now - offerTime < 30000) {
-                handleOffer(JSON.parse(offerData));
-                return true;
-            }
-        }
-        return false;
-    };
-    
-    // 立即检查一次
-    if (!checkOffer()) {
-        // 如果还没有 Offer，每 500ms 检查一次
-        const checkInterval = setInterval(() => {
-            if (checkOffer()) {
-                clearInterval(checkInterval);
-            }
-        }, 500);
-        
-        // 30 秒后停止检查
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            if (!peerConnection?.remoteDescription) {
-                updateSignalingInfo('⏱️ 等待 Offer 超时，请确保另一个标签页已选择"发起者"并点击"开始连接"');
-            }
-        }, 30000);
-    }
+    // WebSocket 消息会在 handleWebSocketMessage 中处理
 }
 
 /**
@@ -741,19 +695,15 @@ async function handleOffer(offer) {
         
         console.log('Answer 创建成功:', answer);
         
-        // 通过信令发送 Answer
-        if (currentSignalingType === 'websocket' && websocketSignaling) {
+        // 通过 WebSocket 发送 Answer
+        if (websocketSignaling) {
             if (websocketSignaling.sendAnswer(answer)) {
-                updateSignalingInfo('✅ Answer 已发送（WebSocket）');
+                updateSignalingInfo('✅ Answer 已发送');
             } else {
                 updateSignalingInfo('❌ 发送 Answer 失败，WebSocket 未连接');
             }
         } else {
-            // localStorage 方式
-            localStorage.setItem(SIGNALING_KEYS.ANSWER, JSON.stringify(answer));
-            localStorage.setItem('webrtc_answer_timestamp', Date.now().toString());
-            updateSignalingInfo('✅ Answer 已发送（localStorage）');
-            localStorage.removeItem(SIGNALING_KEYS.OFFER);
+            updateSignalingInfo('❌ WebSocket 未连接，请先连接服务器');
         }
     } catch (error) {
         console.error('处理 Offer 失败:', error);
@@ -765,29 +715,10 @@ async function handleOffer(offer) {
  * 发送 ICE 候选
  */
 function sendIceCandidate(candidate) {
-    if (currentSignalingType === 'websocket' && websocketSignaling) {
-        // WebSocket 方式
+    if (websocketSignaling) {
         websocketSignaling.sendIceCandidate(candidate);
     } else {
-        // localStorage 方式
-        const key = currentRole === 'offerer' 
-            ? SIGNALING_KEYS.ICE_CANDIDATE_OFFERER 
-            : SIGNALING_KEYS.ICE_CANDIDATE_ANSWERER;
-        
-        // 将候选添加到数组中
-        let candidates = [];
-        const existing = localStorage.getItem(key);
-        if (existing) {
-            try {
-                candidates = JSON.parse(existing);
-            } catch (e) {
-                candidates = [];
-            }
-        }
-        
-        candidates.push(candidate);
-        localStorage.setItem(key, JSON.stringify(candidates));
-        localStorage.setItem(key + '_timestamp', Date.now().toString());
+        console.warn('WebSocket 未连接，无法发送 ICE 候选');
     }
 }
 
@@ -808,27 +739,7 @@ async function handleIceCandidate(candidate) {
  * 开始监听信令
  */
 function startSignalingListener() {
-    // WebSocket 方式不需要轮询
-    if (currentSignalingType === 'websocket') {
-        return;
-    }
-    
-    // localStorage 方式需要轮询
-    if (signalingInterval) {
-        clearInterval(signalingInterval);
-    }
-    
-    // 每 500ms 检查一次信令消息
-    signalingInterval = setInterval(() => {
-        if (currentRole === 'offerer') {
-            // 发起者：检查 Answer 和接收者的 ICE 候选
-            checkAnswer();
-            checkIceCandidates(SIGNALING_KEYS.ICE_CANDIDATE_ANSWERER);
-        } else {
-            // 接收者：检查发起者的 ICE 候选
-            checkIceCandidates(SIGNALING_KEYS.ICE_CANDIDATE_OFFERER);
-        }
-    }, 500);
+    // WebSocket 方式不需要轮询，消息通过事件处理
 }
 
 /**
@@ -849,67 +760,11 @@ async function handleAnswer(answer) {
     }
 }
 
-/**
- * 检查 Answer（发起者）- localStorage 方式
- */
-async function checkAnswer() {
-    const answerData = localStorage.getItem(SIGNALING_KEYS.ANSWER);
-    const timestamp = localStorage.getItem('webrtc_answer_timestamp');
-    
-    if (answerData && timestamp) {
-        const answerTime = parseInt(timestamp);
-        const now = Date.now();
-        
-        // 只处理最近 30 秒内的 Answer
-        if (now - answerTime < 30000 && peerConnection.remoteDescription === null) {
-            await handleAnswer(JSON.parse(answerData));
-            // 清除 Answer
-            localStorage.removeItem(SIGNALING_KEYS.ANSWER);
-        }
-    }
-}
-
-/**
- * 检查 ICE 候选
- */
-async function checkIceCandidates(key) {
-    const candidatesData = localStorage.getItem(key);
-    const timestamp = localStorage.getItem(key + '_timestamp');
-    
-    if (candidatesData && timestamp) {
-        const candidateTime = parseInt(timestamp);
-        const now = Date.now();
-        
-        // 只处理最近 30 秒内的候选
-        if (now - candidateTime < 30000) {
-            try {
-                const candidates = JSON.parse(candidatesData);
-                
-                // 处理所有候选
-                for (const candidate of candidates) {
-                    await handleIceCandidate(candidate);
-                }
-                
-                // 清除已处理的候选
-                localStorage.removeItem(key);
-                localStorage.removeItem(key + '_timestamp');
-            } catch (error) {
-                console.error('处理 ICE 候选失败:', error);
-            }
-        }
-    }
-}
 
 /**
  * 停止连接
  */
 function stopConnection() {
-    // 停止信令监听
-    if (signalingInterval) {
-        clearInterval(signalingInterval);
-        signalingInterval = null;
-    }
-    
     // 关闭 WebSocket 连接（不断开，保持连接以便下次使用）
     // if (websocketSignaling) {
     //     websocketSignaling.close();
@@ -943,14 +798,6 @@ function stopConnection() {
     // 更新按钮状态
     startBtn.disabled = false;
     stopBtn.disabled = true;
-    
-    // 清除 localStorage 信令数据
-    Object.values(SIGNALING_KEYS).forEach(key => {
-        localStorage.removeItem(key);
-        localStorage.removeItem(key + '_timestamp');
-    });
-    localStorage.removeItem('webrtc_offer_timestamp');
-    localStorage.removeItem('webrtc_answer_timestamp');
     
     updateConnectionStatus('disconnected');
     updateSignalingInfo('连接已断开');
@@ -1141,8 +988,6 @@ function handleError(error) {
 }
 
 // 绑定事件监听器
-localStorageBtn.addEventListener('click', () => selectSignalingType('localStorage'));
-websocketBtn.addEventListener('click', () => selectSignalingType('websocket'));
 offererBtn.addEventListener('click', () => selectRole('offerer'));
 answererBtn.addEventListener('click', () => selectRole('answerer'));
 resetRoleBtn.addEventListener('click', resetRole);
@@ -1153,8 +998,8 @@ copyIceBtn.addEventListener('click', copyIceInfo);
 // 初始化页面
 initPage();
 
-// 初始化信令方式
-updateSignalingStatus('info', '使用 localStorage 信令（无需服务器）');
+// 自动连接 WebSocket 服务器
+connectWebSocket();
 
 // 页面加载时检查支持情况
 if (!checkSupport()) {
