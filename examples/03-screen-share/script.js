@@ -311,3 +311,4 @@ if (!checkSupport()) {
     shareInfo.innerHTML = '<p style="color: red;">您的浏览器不支持 getDisplayMedia API</p>';
 }
 
+
